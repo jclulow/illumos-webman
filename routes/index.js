@@ -1,8 +1,4 @@
 
-/*
- * GET home page.
- */
-
 var spawn = require('child_process').execFile;
 var fs = require('fs');
 var path = require('path');
@@ -46,22 +42,6 @@ function maybeFormat(line)
   }
   return (line);
 }
-
-/*
-function formatLine(line)
-{
-  var len = line.length;
-  var pos = 0;
-  var lic = 0;
-  var state = 'REST';
-  while (pos < len) {
-    var c = line.charAt(pos);
-    switch (state) {
-      case 'REST':
-        if (c < 'a' && c > 'z')
-    }
-  }
-}*/
 
 exports.manpage = function(req, res) {
   /* figure out what page we're after */
@@ -141,16 +121,43 @@ var MANPATH = path.join(process.env.HOME, 'proj', 'webman',
                         'proto.man', 'usr', 'share', 'man');
 
 var SECTIONS = {
+  1: 'Commands',
+  2: 'System Calls',
+  3: 'Libraries',
+  4: 'File Formats',
+  5: 'Standards, Environments, and Macros',
+  6: 'There Is Nooooooooo... Section 6',
+  7: 'Device and Network Interfaces',
+  8: 'This Section Intentionally Left Blank',
+  9: 'Driver Entry Points'
+};
+var SUBSECTIONS = {
   'man1': 'User Commands',
   'man1b': 'SunOS/BSD Compatibility Package Commands',
   'man1c': 'Communication Commands',
   'man1m': 'Maintenance Commands',
   'man2': 'System Calls',
+  'man3': 'Introduction to Library Functions',
+  'man3bsm': 'Security and Auditing Library Functions',
   'man3c': 'Standard C Library Functions',
+  'man3cfgadm': 'Configuration Administration Library Functions',
+  'man3contract': 'Contract Subsystem Interfaces',
+  'man3curses': 'Curses Library Functions',
+  'man3xnet': 'X/Open Networking Interfaces',
+  'man3libucb': 'SunOS/BSD Compatibility Libraries',
   'man4': 'File Formats',
   'man5': 'Standards, Environments, and Macros',
+  'man7': 'Device and Network Interfaces',
   'man7d': 'Devices',
-  'man9f': 'Kernel Functions for Drivers',
+  'man7fs': 'File Systems',
+  'man7i': 'ioctl Requests',
+  'man7ipp': 'Miscellaneous References',
+  'man7m': 'STREAMS Modules',
+  'man7p': 'Protocols',
+  'man9e': 'Driver Entry Points',
+  'man9f': 'Kernel Functions',
+  'man9p': 'Driver Properties',
+  'man9s': 'Data Structures',
 };
 
 exports.sectionlist = function(req, res) {
@@ -161,10 +168,23 @@ exports.sectionlist = function(req, res) {
 
     dirs = dirs.sort();
 
-    var y = '<h1>illumos: manual sections</h1><table>';
+    var lastnum = 0;
+    var y = '<h1>illumos: manual sections</h1>';
+    y += '<table>';
     for (var i = 0; i < dirs.length; i++) {
-      var section = SECTIONS[dirs[i]] || '';
+      var section = SUBSECTIONS[dirs[i]] || '';
       var shortn = dirs[i].replace(/^man/, '');
+      var num = Number(shortn.replace(/^([0-9]+).*/, '$1'));
+      if (num !== lastnum) {
+        y += '<tr><td colspan="2"><h2>section ' + num +
+          ': ' + SECTIONS[num] + '</h2>' +
+          '</td></tr>';
+        y += '<tr><td><a href="/man/' + num + '/intro">' +
+          'intro.' + num + '</a></td><td>Section Introduction</td>' +
+          '</tr>';
+        y += '<tr><td colspan="2">&nbsp;</td></tr>';
+        lastnum = num;
+      }
       y += '<tr><td><a href="/man/' + shortn +
         '/all">' + dirs[i] + '</a></td><td>' + section +
         '</td></tr>';
@@ -199,12 +219,25 @@ exports.pagelist = function(req, res) {
     dirs = dirs.sort();
 
     var y = '<h1>illumos: manual section ' + section + ' index</h1>';
-    var sname = SECTIONS['man' + section] || null;
-    if (sname)
-      y += '<h2>' + sname + '</h2>';
+    var sname = SUBSECTIONS['man' + section] || null;
+    if (sname) {
+      var num = Number(section.replace(/^([0-9]+).*/, '$1'));
+      y += '<h2>' + SECTIONS[num] + ': ' + sname + '</h2>';
+    }
     y += '<table>';
+    if (dirs.indexOf('intro.' + section) !== -1) {
+      y += '<tr><td><a href="/man/' + section + '/intro' +
+        '">intro</a> (Section Introduction)</td></tr>';
+      y += '<tr><td colspan="2">&nbsp;</td></tr>';
+    } else if (dirs.indexOf('Intro.' + section) !== -1) {
+      y += '<tr><td><a href="/man/' + section + '/Intro' +
+        '">Intro</a> (Section Introduction)</td></tr>';
+      y += '<tr><td colspan="2">&nbsp;</td></tr>';
+    }
     for (var i = 0; i < dirs.length; i++) {
-      var shortn = dirs[i].replace(/\.[^.]*/, '');
+      if (dirs[i].match(/^[iI]ntro\./))
+        continue;
+      var shortn = dirs[i].replace(/\.[^.]+$/, '');
       y += '<tr><td><a href="/man/' + section + '/' + shortn +
         '">' + shortn + '</a></td></tr>';
     }
