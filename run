@@ -1,0 +1,13 @@
+#!/bin/ksh
+
+DIR=$(dirname $(whence $0))
+NODE=/opt/local/bin/node
+
+export PATH=/usr/bin:/usr/sbin:$PATH
+export MANPATH=$DIR/proto.man/usr/share/man
+
+while sleep 1; do
+  cd $DIR || exit 1
+  $NODE app
+  echo "exit code: $?"
+done
