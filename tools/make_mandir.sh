@@ -1,4 +1,21 @@
 #!/bin/ksh
+#
+# This script is a concise embodiment of HERESY BY THOUGHT
+# topped off immediately by HERESY BY DEED.  There may
+# be additional HERESY, but in short:
+#
+#  tools/make is a hacked up copy of Sun make that looks
+#   for make.rules in the current directory instead of
+#   in /usr/share/lib/make.
+#
+#  ~/illumos-gate should have the gate checked out, but
+#   otherwise untouched.
+#
+#  this script will hopefully, in a regular SmartMachine,
+#   then totally just build the manpages into proto.man.
+#
+# Seriously, though, probably don't run this.
+#
 
 DIR=$(dirname $(whence $0))/..
 
