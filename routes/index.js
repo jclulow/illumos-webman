@@ -102,7 +102,8 @@ exports.manpage = function(req, res) {
       } else {
         empty = 0;
         if (isHeadingLine(l)) {
-          y += '<b>' + sanitise(l) + '</b><br>\n';
+          var aName = sanitise(l.replace(/ /g, '_')).trim().toLowerCase();
+          y += '<b><a name="' + aName + '"></a>' + sanitise(l) + '</b><br>\n';
         } else {
           y += maybeFormat(sanitise(l)) + '<br>\n';
         }
