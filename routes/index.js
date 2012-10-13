@@ -108,6 +108,10 @@ exports.manpage = function(req, res) {
 
   col.stdout.on('end', function() {
 
+    var notFound = false;
+    if (x.match(/^No entry for/))
+      notFound = true;
+
     var lines = x.split('\n');
     var y = '';
     var empty = 0;
@@ -128,9 +132,18 @@ exports.manpage = function(req, res) {
       }
     }
 
+    var title;
+    if (notFound) {
+      res.status(404);
+      title = 'illumos: manual page not found: ' + page +
+        (section ? '(' + section + ')' : '');
+    } else {
+      res.status(200);
+      title = 'illumos: manual page: ' + page +
+        (section ? '(' + section + ')' : '');
+    }
     res.render('manpage', {
-      title: 'illumos: manual page: ' + page +
-                 (section ? '(' + section + ')' : ''),
+      title: title,
       pagetext: y
     });
   });
