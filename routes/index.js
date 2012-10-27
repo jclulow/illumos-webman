@@ -236,7 +236,7 @@ exports.pagelist = function(req, res) {
    if (req.params.section) {
      var t = req.params.section.replace(/[^a-zA-Z0-9]/g, '');
      if (t)
-       section = t;
+       section = t.toLowerCase();
    }
 
    if (!section)
