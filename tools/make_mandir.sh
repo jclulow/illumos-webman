@@ -17,10 +17,10 @@
 # Seriously, though, probably don't run this.
 #
 
-DIR=$(dirname $(whence $0))/..
+DIR=$(dirname $(whence $0))
 
 export PATH=/usr/sbin:/usr/bin:$PATH
-export PROTO=$DIR/proto.man
+export PROTO=$DIR/../proto.man
 export ROOT=$PROTO
 export SRC=$HOME/illumos-gate/usr/src
 export MAKE=$DIR/make
@@ -28,6 +28,10 @@ export MAKEFLAGS="-e"
 export BUILD64="#"
 
 mkdir -p $PROTO || exit 1
+
+for dir in $SRC/man/*; do
+  [[ -d $dir ]] && cp $DIR/make.rules $dir/make.rules
+done
 
 (cd $SRC && cp $DIR/make.rules . && $DIR/make rootdirs)
 (cd $SRC/man && cp $DIR/make.rules . && $DIR/make install)
