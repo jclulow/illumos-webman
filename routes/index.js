@@ -22,8 +22,27 @@ var spawn = require('child_process').execFile;
 var fs = require('fs');
 var path = require('path');
 
+var CONFIG;
+try {
+  CONFIG = require('../config.json');
+} catch (ex) {
+  CONFIG = {};
+}
+
+function
+make_options(title, pagetext)
+{
+  var o = {};
+  if (CONFIG.google_analytics_key)
+    o.google_analytics_key = CONFIG.google_analytics_key;
+  o.title = title;
+  if (pagetext)
+    o.pagetext = pagetext;
+  return (o);
+}
+
 exports.index = function(req, res){
-  res.render('index', { title: 'Express' });
+  res.render('index', make_options('Express'));
 };
 
 function sanitise(y)
@@ -142,10 +161,7 @@ exports.manpage = function(req, res) {
       title = 'illumos: manual page: ' + page +
         (section ? '(' + section + ')' : '');
     }
-    res.render('manpage', {
-      title: title,
-      pagetext: y
-    });
+    res.render('manpage', make_options(title, y));
   });
 };
 
@@ -223,10 +239,7 @@ exports.sectionlist = function(req, res) {
     }
     y += '</table>';
 
-    return res.render('manpage', {
-      title: 'illumos: manual sections',
-      pagetext: y
-    });
+    return res.render('manpage', make_options('illumos: manual sections', y));
   });
 };
 
@@ -275,9 +288,7 @@ exports.pagelist = function(req, res) {
     }
     y += '</table>';
 
-    return res.render('manpage', {
-      title: 'illumos: manual section ' + section + ' index',
-      pagetext: y
-    });
+    return res.render('manpage', make_options('illumos: manual section ' +
+      section + ' index', y));
   });
 };
