@@ -43,7 +43,7 @@ SERVER.on('uncaughtException', function (err) {
 });
 
 function
-make_page(title, show_title, rows)
+send_page(res, title, show_title, rows)
 {
 	var out = [
 		'<html>',
@@ -81,7 +81,12 @@ make_page(title, show_title, rows)
 		'</html>'
 	]);
 
-	return (out.join('\n'));
+	var data = out.join('\n');
+	res.writeHead(200, {
+		'Content-Type': 'text/html',
+		'Content-Length': Buffer.byteLength(data)
+	});
+	res.end(data);
 }
 
 function
@@ -138,9 +143,7 @@ render_index(req, res, next)
 	}
 	rows.push('</table>');
 
-	res.writeHead(200);
-	res.write(make_page('manual sections', true, rows));
-	res.end();
+	send_page(res, 'manual sections', true, rows);
 	next();
 }
 
@@ -190,10 +193,7 @@ render_section(sect, req, res, next)
 
 		rows.push('</table>');
 
-		res.writeHead(200);
-		res.write(make_page('manual section ' + sect +
-		    ' index', true, rows));
-		res.end();
+		send_page(res, 'manual section ' + sect + ' index', true, rows);
 		next();
 	});
 }
@@ -242,14 +242,12 @@ render_page(sect, page, req, res, next)
 				return;
 			done = true;
 
-			res.writeHead(200);
 			var shortn = mod_path.basename(path);
-			res.write(make_page('manual page: ' + shortn, false, [
+			send_page(res, 'manual page: ' + shortn, false, [
 				'<div class="manpage">',
 				data,
 				'</div>'
-			]));
-			res.end();
+			]);
 			next();
 		});
 	});
