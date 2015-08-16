@@ -6,8 +6,9 @@ NODE=/opt/local/bin/node
 export PATH=/usr/bin:/usr/sbin:$PATH
 export MANPATH=$DIR/proto.man/usr/share/man
 
-while sleep 1; do
-  cd $DIR || exit 1
+cd $DIR || exit 1
+if [[ -t 0 ]]; then
+  $NODE app | $NODE $DIR/node_modules/.bin/bunyan
+else
   $NODE app
-  echo "exit code: $?"
-done
+fi

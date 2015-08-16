@@ -6,7 +6,14 @@
     "start": "node app"
   },
   "dependencies": {
-    "express": "3.0.0rc4",
-    "jade": "*"
+    "assert-plus": "^0.1.5",
+    "bunyan": "^1.4.0",
+    "restify": "^4.0.0",
+    "vasync": "^1.6.3",
+    "verror": "^1.6.0"
+  },
+  "devDependencies": {
+    "jscs": "^2.1.0",
+    "jshint": "^2.8.0"
   }
 }
