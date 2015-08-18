@@ -215,11 +215,12 @@ render_page(sect, page, req, res, next)
 
 		var args = [
 			'-Tascii',
-			'-Owidth=80',
+			req.__raw ? '-Owidth=76' : '-Owidth=80',
 			path
 		];
 
 		var done = false;
+		var data = '';
 		var cp = mod_child.spawn(CONFIG.mandoc, args);
 		cp.on('error', function (err) {
 			if (done)
@@ -228,9 +229,15 @@ render_page(sect, page, req, res, next)
 			next(err);
 		});
 		cp.stdin.end();
-		var data = '';
-		var outs = cp.stdout.pipe(new lib_fmt.TeletypeStream()).
-		    pipe(new lib_manstream.ManStream());
+
+		var outs;
+		if (req.__raw) {
+			outs = cp.stdout;
+		} else {
+			outs = cp.stdout.pipe(new lib_fmt.TeletypeStream()).
+			    pipe(new lib_manstream.ManStream());
+		}
+
 		outs.on('readable', function () {
 			var ch;
 			while ((ch = outs.read()) !== null) {
@@ -241,6 +248,17 @@ render_page(sect, page, req, res, next)
 			if (done)
 				return;
 			done = true;
+
+			if (req.__raw) {
+				res.writeHead(200, {
+					'content-type': 'text/plain',
+					'content-length':
+					    Buffer.byteLength(data)
+				});
+				res.end(data);
+				next();
+				return;
+			}
 
 			var shortn = mod_path.basename(path);
 			send_page(res, 'manual page: ' + shortn, false, [
@@ -259,6 +277,12 @@ handle_get(req, res, next)
 	var sect = req.params[0];
 	var page = req.params[1];
 
+	var fail_raw = function () {
+		next(new mod_restify.errors.NotFoundError(
+		    'This functionality is not available for the "__raw"' +
+		    ' endpoints.'));
+	};
+
 	/*
 	 * Clean up the "section" and "page" parameters, if they were passed:
 	 */
@@ -270,6 +294,11 @@ handle_get(req, res, next)
 	}
 
 	if (!sect || (sect === 'all' && !page)) {
+		if (req.__raw) {
+			fail_raw();
+			return;
+		}
+
 		/*
 		 * If no arguments were passed, or the section 'all' was passed,
 		 * render the index page:
@@ -280,6 +309,11 @@ handle_get(req, res, next)
 
 	if (MANDIR.is_section(sect)) {
 		if (!page || page === 'all') {
+			if (req.__raw) {
+				fail_raw();
+				return;
+			}
+
 			render_section(sect, req, res, next);
 			return;
 		}
@@ -305,6 +339,49 @@ handle_get(req, res, next)
 	 */
 	render_page(null, sect, req, res, next);
 }
+
+function
+handle_get_form2(req, res, next)
+{
+	var page = req.params[0];
+	var sect = req.params[1];
+
+	req.params[0] = sect;
+	req.params[1] = page;
+
+	return (handle_get(req, res, next));
+}
+
+function
+handle_get_raw(req, res, next)
+{
+	req.__raw = true;
+
+	return (handle_get(req, res, next));
+}
+
+function
+handle_get_raw_form2(req, res, next)
+{
+	req.__raw = true;
+
+	return (handle_get_form2(req, res, next));
+}
+
+/*
+ * This route exists to handle a legacy case that older versions of the
+ * software provided by accident, e.g.: "/man/tcp.7p".
+ */
+SERVER.get(/^\/man\/([^/]+)\.([^/.]+)\/?$/, handle_get_form2);
+SERVER.get(/^\/man\/__raw\/([^/]+)\.([^/.]+)\/?$/, handle_get_raw_form2);
+
+/*
+ * This route servers up "raw" versions of the pages, including the
+ * original "teletype"-style formatting characters.  This can be used
+ * with "curl" piped to "less".
+ */
+SERVER.get(/^\/man\/__raw\/([^/]+)\/?$/, handle_get_raw);
+SERVER.get(/^\/man\/__raw\/([^/]+)\/([^/]+)\/?$/, handle_get_raw);
 
 /*
  * We use regular expressions here, as we must continue to support URLs with
