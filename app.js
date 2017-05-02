@@ -154,8 +154,8 @@ render_section(sect, req, res, next)
 		if (err) {
 			if (err.code === 'ENOENT') {
 				next(new mod_restify.errors.NotFoundError(
-				    'The manual section "' + sect + '" was ' +
-				    'not found.'));
+				    'The manual section "%s" was not found.',
+				    sect));
 				return;
 			}
 			next(err);
@@ -205,8 +205,8 @@ render_page(sect, page, req, res, next)
 		if (err) {
 			if (err.code === 'ENOENT') {
 				next(new mod_restify.errors.NotFoundError(
-				    'The manual page "' + page + '" was ' +
-				    'not found.'));
+				    'The manual page "%s" was not found.',
+				    page));
 				return;
 			}
 			next(err);
@@ -328,8 +328,7 @@ handle_get(req, res, next)
 		 * a section; bail out.
 		 */
 		next(new mod_restify.errors.NotFoundError(
-		    'The manual section "' + sect + '" was ' +
-		    'not found.'));
+		    'The manual section "%s" was not found.', sect));
 		return;
 	}
 
