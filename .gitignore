@@ -1,4 +1,4 @@
-/proto.man/
+/proto.man*
 /node_modules/
-/config.json
+/etc/config.json
 /*-*-stamp

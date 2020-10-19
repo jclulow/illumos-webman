@@ -1,4 +1,4 @@
-#!/bin/ksh
+#!/bin/bash
 #
 # This script is a concise embodiment of HERESY BY THOUGHT
 # topped off immediately by HERESY BY DEED.  There may
@@ -17,29 +17,43 @@
 # Seriously, though, probably don't run this.
 #
 
-DIR=$(dirname $(whence $0))
+set -o errexit
+set -o pipefail
+
+DIR=$(cd "$(dirname "$0")" && pwd)
+
+datestamp=$(date -u +%F-%H%M%S)
 
 export PATH=/usr/sbin:/usr/bin:$PATH
-export PROTO=$DIR/../proto.man
+export PROTO=$DIR/../proto.man.$datestamp
 export ROOT=$PROTO
 export SRC=$HOME/illumos-gate/usr/src
 export MAKE=$DIR/make
 export MAKEFLAGS="-e"
 export BUILD64="#"
+export INS=/usr/sbin/install
 
-mkdir -p $PROTO || exit 1
+mkdir -p "$PROTO"
 
-for dir in $SRC/man/*; do
-  [[ -d $dir ]] && cp $DIR/make.rules $dir/make.rules
+for dir in "$SRC/man/"*; do
+	if [[ ! -d "$dir" ]]; then
+		continue
+	fi
+
+	cp "$DIR/make.rules" "$dir/make.rules"
 done
 
-(cd $SRC && cp $DIR/make.rules . && $DIR/make rootdirs)
-(cd $SRC/man && cp $DIR/make.rules . && $DIR/make install)
+(cd "$SRC/man" && cp "$DIR/make.rules" . && "$DIR/make" install MACH=i386)
 
-# fudge in the /opt/onbld/man manpages...
-rm -rf $PROTO/usr/share/man/man1onbld
-mkdir -p $PROTO/usr/share/man/man1onbld
-(cd $SRC/tools && find . -name \*.1 -exec cp {} \
-   $PROTO/usr/share/man/man1onbld \; )
-(cd $PROTO/usr/share/man/man1onbld &&
-  for f in *.1; do mv $f ${f}onbld; done)
+#
+# Manual pages from section 1ONBLD are in the tools area, separate from the
+# rest of the pages.  Copy them in so that we have a single unified manual
+# directory:
+#
+rm -rf "$PROTO/usr/share/man/man1onbld"
+mkdir -p "$PROTO/usr/share/man/man1onbld"
+(cd "$SRC/tools" && find . -name '*.1onbld' -exec cp {} \
+   "$PROTO/usr/share/man/man1onbld" \; )
+
+rm -f $DIR/../proto.man
+ln -s "proto.man.$datestamp" "$DIR/../proto.man"
