@@ -48,7 +48,7 @@ send_page(res, title, show_title, rows)
 	var out = [
 		'<html>',
 		'	<head>',
-		'		<title>illumos: ' + title + '</title>',
+		'		<title>' + CONFIG.system_name + ': ' + title + '</title>',
 		'		<style>',
 		'			body {',
 		'				padding: 25px;',
@@ -71,7 +71,7 @@ send_page(res, title, show_title, rows)
 	];
 
 	if (show_title) {
-		out.push('		<h1>illumos: ' + title + '</h1>');
+		out.push('		<h1>' + CONFIG.system_name + ': ' + title + '</h1>');
 	}
 
 	out = out.concat(rows);
