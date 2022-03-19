@@ -203,7 +203,7 @@ render_section(sect, req, res, next)
 function
 render_page(sect, page, req, res, next)
 {
-	MANDIR.lookup(sect, page, function (err, path) {
+	MANDIR.lookup(sect, page, function (err, path, resolved_sect) {
 		if (err) {
 			if (err.code === 'ENOENT') {
 				next(new mod_restify.errors.NotFoundError(
@@ -220,6 +220,19 @@ render_page(sect, page, req, res, next)
 			req.__raw ? '-Owidth=76' : '-Owidth=80',
 			path
 		];
+
+		if (resolved_sect !== sect) {
+			/*
+			 * The resolved section name is not the same as the one
+			 * we were provided in the URL.  Redirect the user to
+			 * the canonical URL for this page.
+			 */
+			res.header('location',
+			    '/man/' + resolved_sect + '/' + page);
+			res.send(302);
+			next();
+			return;
+		}
 
 		var done = false;
 		var data = '';
@@ -309,28 +322,67 @@ handle_get(req, res, next)
 		return;
 	}
 
-	if (MANDIR.is_section(sect)) {
-		if (!page || page === 'all') {
-			if (req.__raw) {
-				fail_raw();
+	/*
+	 * If the section does not exist, we want to check to see if it _used_
+	 * to exist and potentially redirect to the new name:
+	 */
+	var newsect = lib_mandir.translate_from_old_name(sect);
+
+	if (!page || page === 'all') {
+		if (req.__raw) {
+			fail_raw();
+			return;
+		}
+
+		if (MANDIR.is_section(sect)) {
+			if (sect !== sect.toUpperCase()) {
+				var redir = '/man/' + sect.toUpperCase();
+				if (page === 'all') {
+					redir += '/all';
+				}
+				res.header('location', redir);
+				res.send(302);
+				next();
 				return;
 			}
 
+			/*
+			 * This section exists today.  Render the section
+			 * index:
+			 */
 			render_section(sect, req, res, next);
 			return;
 		}
 
-		render_page(sect, page, req, res, next);
-		return;
+		if (newsect) {
+			/*
+			 * This section does not exist today, but was a
+			 * candidate for renaming under IPD 4.  Redirect to the
+			 * new name:
+			 */
+			var redir = '/man/' + newsect.toUpperCase();
+			if (page === 'all') {
+				redir += '/all';
+			}
+			res.header('location', redir);
+			res.send(302);
+			next();
+			return;
+		}
 	}
 
 	if (page) {
-		/*
-		 * We're trying to look a page up in something that is not
-		 * a section; bail out.
-		 */
-		next(new mod_restify.errors.NotFoundError(
-		    'The manual section "%s" was not found.', sect));
+		if (!MANDIR.is_section(sect) && !newsect) {
+			/*
+			 * We're trying to look a page up in something that is
+			 * not a section; bail out.
+			 */
+			next(new mod_restify.errors.NotFoundError(
+			    'The manual section "%s" was not found.', sect));
+			return;
+		}
+
+		render_page(sect, page, req, res, next);
 		return;
 	}
 
